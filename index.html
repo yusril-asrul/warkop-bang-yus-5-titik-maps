@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Warkop BangYus — Secangkir Kehangatan</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Epilogue:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1A1208;
+  --gold:#C8973A;
+  --gold-light:#E8C47A;
+  --sand:#F2E8D5;
+  --sand-dark:#E0CEAC;
+  --cream:#FAF6EE;
+  --muted:#7A6040;
+  --white:#FFFDF8;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Epilogue',sans-serif;background:var(--cream);color:var(--ink);overflow-x:hidden}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--sand)}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:3px}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:1.25rem 3rem;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:all 0.4s ease;
+}
+nav.scrolled{
+  background:rgba(26,18,8,0.95);
+  backdrop-filter:blur(12px);
+  padding:0.9rem 3rem;
+  box-shadow:0 2px 30px rgba(0,0,0,0.3);
+}
+.nav-logo{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.5rem;font-style:italic;
+  color:var(--gold-light);letter-spacing:0.02em;
+}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{
+  color:rgba(255,255,255,0.75);
+  text-decoration:none;font-size:0.82rem;
+  font-weight:400;letter-spacing:0.06em;text-transform:uppercase;
+  transition:color 0.2s;
+}
+.nav-links a:hover{color:var(--gold-light)}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  background:#1A1208;
+  position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;text-align:center;
+  padding:6rem 2rem 4rem;
+}
+/* Decorative circle bg */
+.hero::before{
+  content:'';position:absolute;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(200,151,58,0.12) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.hero-eyebrow{
+  font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:1.5rem;
+  animation:fadeUp 0.8s ease both;
+}
+.hero h1{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(3rem,9vw,7rem);
+  font-weight:600;
+  color:var(--white);
+  line-height:0.95;letter-spacing:-0.01em;
+  margin-bottom:0.2em;
+  animation:fadeUp 0.8s 0.15s ease both;
+}
+.hero h1 em{color:var(--gold-light);font-style:italic}
+.hero-sub{
+  font-size:1rem;font-weight:300;
+  color:rgba(255,255,255,0.5);
+  max-width:420px;line-height:1.7;
+  margin:1.5rem auto 2.5rem;
+  animation:fadeUp 0.8s 0.3s ease both;
+}
+.btn-primary{
+  display:inline-block;
+  background:var(--gold);color:var(--ink);
+  padding:0.85rem 2.5rem;
+  font-size:0.82rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;
+  text-decoration:none;border-radius:40px;
+  transition:all 0.25s ease;
+  animation:fadeUp 0.8s 0.45s ease both;
+}
+.btn-primary:hover{background:var(--gold-light);transform:translateY(-2px);box-shadow:0 8px 24px rgba(200,151,58,0.35)}
+
+/* Scroll indicator */
+.scroll-hint{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  color:rgba(255,255,255,0.3);font-size:0.7rem;letter-spacing:0.1em;
+  animation:fadeUp 1s 0.8s ease both;
+}
+.scroll-line{
+  width:1px;height:40px;background:rgba(200,151,58,0.4);
+  animation:scrollDown 1.8s ease-in-out infinite;
+}
+@keyframes scrollDown{0%,100%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}}
+
+/* Decorative coffee beans SVG overlay */
+.bean{
+  position:absolute;opacity:0.06;
+  animation:float 6s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-20px) rotate(10deg)}}
+
+/* ── SECTION BASE ── */
+section{padding:6rem 2rem}
+.container{max-width:1100px;margin:0 auto}
+.section-label{
+  font-size:0.7rem;letter-spacing:0.22em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:1rem;display:block;
+}
+.section-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(2rem,5vw,3.5rem);
+  font-weight:600;line-height:1.1;
+  color:var(--ink);
+}
+
+/* ── ABOUT ── */
+.about{background:var(--cream)}
+.about-inner{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:5rem;align-items:center;
+}
+.about-text p{
+  font-size:0.95rem;font-weight:300;
+  color:var(--muted);line-height:1.9;margin-top:1.5rem;
+}
+.about-stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
+  margin-top:2.5rem;
+}
+.stat-box{
+  background:var(--white);
+  border:1px solid var(--sand-dark);
+  border-radius:12px;padding:1.25rem;
+}
+.stat-num{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.5rem;font-weight:600;color:var(--gold);
+  line-height:1;
+}
+.stat-label{
+  font-size:0.75rem;color:var(--muted);
+  margin-top:4px;letter-spacing:0.04em;
+}
+/* Decorative about image placeholder */
+.about-visual{
+  position:relative;
+  background:var(--ink);border-radius:16px;
+  overflow:hidden;aspect-ratio:3/4;
+  display:flex;align-items:center;justify-content:center;
+}
+.about-visual-inner{
+  font-family:'Cormorant Garamond',serif;
+  font-size:6rem;opacity:0.15;color:var(--gold);
+  user-select:none;
+}
+.about-visual-badge{
+  position:absolute;bottom:1.5rem;right:1.5rem;
+  background:var(--gold);color:var(--ink);
+  font-size:0.75rem;font-weight:500;
+  padding:0.6rem 1rem;border-radius:8px;
+  letter-spacing:0.04em;
+}
+/* Decorative diagonal stripe */
+.about-visual::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(
+    45deg,
+    rgba(200,151,58,0.03) 0px,
+    rgba(200,151,58,0.03) 1px,
+    transparent 1px,
+    transparent 20px
+  );
+}
+
+/* ── MENU ── */
+.menu{background:var(--ink)}
+.menu .section-title{color:var(--white)}
+.menu .section-label{color:var(--gold)}
+.menu-header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:3rem;flex-wrap:wrap;gap:1rem;
+}
+.menu-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:1.25rem;
+}
+.menu-card{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(200,151,58,0.15);
+  border-radius:14px;padding:1.5rem;
+  transition:all 0.25s ease;cursor:default;
+}
+.menu-card:hover{
+  background:rgba(200,151,58,0.08);
+  border-color:rgba(200,151,58,0.4);
+  transform:translateY(-3px);
+}
+.menu-card-icon{
+  font-size:2rem;margin-bottom:0.75rem;
+  display:block;
+}
+.menu-card h3{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.2rem;font-weight:600;
+  color:var(--white);margin-bottom:0.3rem;
+}
+.menu-card p{
+  font-size:0.78rem;color:rgba(255,255,255,0.45);
+  line-height:1.6;
+}
+.menu-card .price{
+  margin-top:1rem;font-size:0.85rem;
+  color:var(--gold-light);font-weight:500;
+}
+.menu-tabs{display:flex;gap:0.5rem;flex-wrap:wrap}
+.tab{
+  background:transparent;border:1px solid rgba(200,151,58,0.3);
+  color:rgba(255,255,255,0.5);
+  padding:0.4rem 1.1rem;border-radius:20px;
+  font-size:0.75rem;letter-spacing:0.05em;cursor:pointer;
+  transition:all 0.2s;font-family:'Epilogue',sans-serif;
+}
+.tab.active,.tab:hover{
+  background:var(--gold);color:var(--ink);
+  border-color:var(--gold);
+}
+
+/* ── ATMOSPHERE ── */
+.atmo{background:var(--sand)}
+.atmo-grid{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr;
+  grid-template-rows:auto auto;
+  gap:1rem;margin-top:3rem;
+}
+.atmo-box{
+  background:var(--ink);
+  border-radius:14px;overflow:hidden;
+  position:relative;
+  display:flex;align-items:flex-end;
+  padding:1.5rem;min-height:220px;
+}
+.atmo-box:first-child{grid-row:span 2;min-height:460px}
+.atmo-box-bg{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:5rem;opacity:0.08;
+  color:var(--gold);user-select:none;
+}
+.atmo-box-label{
+  position:relative;z-index:1;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.1rem;font-style:italic;
+  color:rgba(255,255,255,0.8);
+}
+
+/* ── TESTIMONIALS ── */
+.testi{background:var(--cream)}
+.testi-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:1.5rem;margin-top:3rem;
+}
+.testi-card{
+  background:var(--white);
+  border:1px solid var(--sand-dark);
+  border-radius:14px;padding:1.75rem;
+}
+.stars{color:var(--gold);font-size:0.85rem;letter-spacing:2px;margin-bottom:0.75rem}
+.testi-card blockquote{
+  font-size:0.9rem;font-style:italic;
+  color:var(--muted);line-height:1.8;
+}
+.testi-author{
+  margin-top:1.25rem;display:flex;align-items:center;gap:0.75rem;
+}
+.avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--gold);display:flex;align-items:center;justify-content:center;
+  font-size:0.8rem;font-weight:500;color:var(--ink);flex-shrink:0;
+}
+.author-name{font-size:0.82rem;font-weight:500;color:var(--ink)}
+.author-note{font-size:0.72rem;color:var(--muted)}
+
+/* ── MAP SECTION ── */
+.map-section{background:var(--ink);padding:6rem 0 0}
+.map-section .container{padding:0 2rem}
+.map-section .section-title{color:var(--white)}
+.map-section .section-label{color:var(--gold)}
+.map-layout{
+  display:grid;grid-template-columns:320px 1fr;
+  margin-top:3rem;height:520px;
+}
+.map-sidebar{
+  background:rgba(255,255,255,0.04);
+  overflow-y:auto;
+  border-radius:14px 0 0 0;
+}
+.map-sidebar-title{
+  padding:1.25rem 1.5rem 0.75rem;
+  font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;
+  color:rgba(255,255,255,0.4);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  position:sticky;top:0;
+  background:rgba(30,20,10,0.95);
+  backdrop-filter:blur(8px);
+}
+.b-card{
+  padding:1rem 1.5rem;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  cursor:pointer;transition:background 0.15s;
+}
+.b-card:hover{background:rgba(200,151,58,0.07)}
+.b-card.active{background:rgba(200,151,58,0.1);border-left:3px solid var(--gold)}
+.b-card h4{font-size:0.88rem;font-weight:500;color:var(--white);margin-bottom:3px}
+.b-card .b-addr{font-size:0.75rem;color:rgba(255,255,255,0.4);line-height:1.5;margin-bottom:4px}
+.b-card .b-hours{font-size:0.72rem;color:var(--gold-light)}
+.b-badge{
+  display:inline-block;font-size:0.65rem;
+  background:rgba(200,151,58,0.15);color:var(--gold-light);
+  border-radius:20px;padding:2px 7px;margin:3px 3px 0 0;
+}
+#map{border-radius:0 14px 0 0}
+
+/* ── FOOTER ── */
+footer{
+  background:#110D06;
+  color:rgba(255,255,255,0.35);
+  padding:3rem 2rem;
+}
+.footer-inner{
+  max-width:1100px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:1.5rem;
+}
+.footer-logo{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem;font-style:italic;
+  color:var(--gold-light);
+}
+.footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+.footer-links a{
+  color:rgba(255,255,255,0.4);font-size:0.78rem;
+  text-decoration:none;transition:color 0.2s;
+}
+.footer-links a:hover{color:var(--gold-light)}
+.footer-copy{font-size:0.72rem;opacity:0.5}
+.footer-socials{display:flex;gap:0.75rem}
+.social-btn{
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.12);
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,0.5);font-size:0.9rem;
+  text-decoration:none;transition:all 0.2s;
+}
+.social-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── DIVIDER ── */
+.divider{
+  width:48px;height:2px;background:var(--gold);
+  margin:1.25rem 0;border-radius:2px;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.reveal{
+  opacity:0;transform:translateY(24px);
+  transition:opacity 0.7s ease,transform 0.7s ease;
+}
+.reveal.visible{opacity:1;transform:none}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  nav{padding:1rem 1.5rem}
+  nav.scrolled{padding:0.75rem 1.5rem}
+  .nav-links{display:none}
+  .about-inner{grid-template-columns:1fr}
+  .about-visual{display:none}
+  .atmo-grid{grid-template-columns:1fr 1fr}
+  .atmo-box:first-child{grid-column:span 2;min-height:240px;grid-row:auto}
+  .map-layout{grid-template-columns:1fr;grid-template-rows:260px 1fr;height:auto}
+  .map-sidebar{border-radius:0;display:flex;overflow-x:auto}
+  .b-card{min-width:200px;flex-shrink:0}
+  .map-sidebar-title{display:none}
+  #map{border-radius:0;height:320px}
+  .footer-inner{flex-direction:column;text-align:center}
+  .footer-links,.footer-socials{justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav id="navbar">
+  <div class="nav-logo">Warkop BangYus</div>
+  <ul class="nav-links">
+    <li><a href="#tentang">Tentang</a></li>
+    <li><a href="#menu">Menu</a></li>
+    <li><a href="#suasana">Suasana</a></li>
+    <li><a href="#ulasan">Ulasan</a></li>
+    <li><a href="#lokasi">Cabang</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero" id="home">
+  <!-- Decorative beans -->
+  <svg class="bean" style="top:15%;left:8%;width:80px;animation-delay:0s" viewBox="0 0 80 80" fill="none"><ellipse cx="40" cy="40" rx="30" ry="18" fill="#C8973A" transform="rotate(-30 40 40)"/><path d="M40 22 Q55 40 40 58" stroke="#1A1208" stroke-width="2.5" fill="none"/></svg>
+  <svg class="bean" style="top:70%;right:10%;width:60px;animation-delay:2s" viewBox="0 0 80 80" fill="none"><ellipse cx="40" cy="40" rx="30" ry="18" fill="#C8973A" transform="rotate(20 40 40)"/><path d="M40 22 Q55 40 40 58" stroke="#1A1208" stroke-width="2.5" fill="none"/></svg>
+  <svg class="bean" style="bottom:25%;left:15%;width:45px;animation-delay:3.5s" viewBox="0 0 80 80" fill="none"><ellipse cx="40" cy="40" rx="30" ry="18" fill="#C8973A" transform="rotate(60 40 40)"/><path d="M40 22 Q55 40 40 58" stroke="#1A1208" stroke-width="2.5" fill="none"/></svg>
+
+  <p class="hero-eyebrow">Sejak 2015 · Makassar</p>
+  <h1>Warkop<br/><em>BangYus</em></h1>
+  <p class="hero-sub">Tempat di mana setiap tegukan kopi menyimpan cerita — hangat, otentik, dan selalu terasa seperti rumah.</p>
+  <a href="#menu" class="btn-primary">Lihat Menu Kami</a>
+
+  <div class="scroll-hint">
+    <span>scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ── ABOUT ── -->
+<section class="about" id="tentang">
+  <div class="container">
+    <div class="about-inner">
+      <div class="about-text reveal">
+        <span class="section-label">Tentang Kami</span>
+        <h2 class="section-title">Kopi yang Lahir dari<br/>Tanah Makassar</h2>
+        <div class="divider"></div>
+        <p>Warkop BangYus bermula dari sebuah warung kecil di sudut kota Makassar. Dengan penuh cinta dan biji kopi pilihan dari Toraja dan Enrekang, kami meracik setiap cangkir dengan tangan sendiri.</p>
+        <p>Lebih dari sekadar tempat ngopi, kami adalah ruang berkumpul — untuk keluarga, sahabat, dan siapa saja yang ingin melepas penat sambil menikmati kopi Sulawesi yang sesungguhnya.</p>
+        <div class="about-stats">
+          <div class="stat-box reveal" style="transition-delay:0.1s">
+            <div class="stat-num">9+</div>
+            <div class="stat-label">Tahun Beroperasi</div>
+          </div>
+          <div class="stat-box reveal" style="transition-delay:0.2s">
+            <div class="stat-num">5</div>
+            <div class="stat-label">Cabang Aktif</div>
+          </div>
+          <div class="stat-box reveal" style="transition-delay:0.3s">
+            <div class="stat-num">40+</div>
+            <div class="stat-label">Varian Menu</div>
+          </div>
+          <div class="stat-box reveal" style="transition-delay:0.4s">
+            <div class="stat-num">★4.8</div>
+            <div class="stat-label">Rating Pelanggan</div>
+          </div>
+        </div>
+      </div>
+      <div class="about-visual reveal" style="transition-delay:0.2s">
+        <div class="about-visual-inner">☕</div>
+        <div class="about-visual-badge">Biji Kopi Toraja & Enrekang</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MENU ── -->
+<section class="menu" id="menu">
+  <div class="container">
+    <div class="menu-header reveal">
+      <div>
+        <span class="section-label">Menu Unggulan</span>
+        <h2 class="section-title" style="color:var(--white)">Racikan Terbaik<br/>Untuk Kamu</h2>
+      </div>
+      <div class="menu-tabs">
+        <button class="tab active" onclick="filterMenu('kopi',this)">Kopi</button>
+        <button class="tab" onclick="filterMenu('non-kopi',this)">Non-Kopi</button>
+        <button class="tab" onclick="filterMenu('makanan',this)">Makanan</button>
+      </div>
+    </div>
+    <div class="menu-grid" id="menuGrid">
+      <!-- data diisi JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ── ATMOSPHERE ── -->
+<section class="atmo" id="suasana">
+  <div class="container">
+    <span class="section-label reveal">Suasana</span>
+    <h2 class="section-title reveal">Nyaman Seperti<br/>Rumah Sendiri</h2>
+    <div class="atmo-grid">
+      <div class="atmo-box reveal" style="transition-delay:0.1s">
+        <div class="atmo-box-bg">🌿</div>
+        <span class="atmo-box-label">Area Indoor & Outdoor yang luas dan asri</span>
+      </div>
+      <div class="atmo-box reveal" style="transition-delay:0.2s">
+        <div class="atmo-box-bg">🎵</div>
+        <span class="atmo-box-label">Musik akustik tiap malam Jumat</span>
+      </div>
+      <div class="atmo-box reveal" style="transition-delay:0.3s">
+        <div class="atmo-box-bg">📶</div>
+        <span class="atmo-box-label">Wi-Fi kencang, colokan di setiap meja</span>
+      </div>
+      <div class="atmo-box reveal" style="transition-delay:0.2s">
+        <div class="atmo-box-bg">🌙</div>
+        <span class="atmo-box-label">Buka sampai larut, cocok untuk begadang produktif</span>
+      </div>
+      <div class="atmo-box reveal" style="transition-delay:0.3s">
+        <div class="atmo-box-bg">🅿️</div>
+        <span class="atmo-box-label">Parkir luas, gratis untuk pelanggan</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIALS ── -->
+<section class="testi" id="ulasan">
+  <div class="container">
+    <span class="section-label reveal">Kata Mereka</span>
+    <h2 class="section-title reveal">Pelanggan Kami<br/>Bicara</h2>
+    <div class="testi-grid">
+      <div class="testi-card reveal" style="transition-delay:0.1s">
+        <div class="stars">★★★★★</div>
+        <blockquote>"Kopinya mantap, harganya ramah di kantong. Suasananya bikin betah berlama-lama. Sudah jadi langganan tetap saya setiap pagi sebelum kerja!"</blockquote>
+        <div class="testi-author">
+          <div class="avatar">AR</div>
+          <div><div class="author-name">Ahmad Rifai</div><div class="author-note">Pelanggan setia sejak 2019</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal" style="transition-delay:0.2s">
+        <div class="stars">★★★★★</div>
+        <blockquote>"Es susu kopi Toraja-nya juara! Nggak ada yang bisa ngalahin. Tempatnya juga bersih dan pelayanannya ramah banget."</blockquote>
+        <div class="testi-author">
+          <div class="avatar">NF</div>
+          <div><div class="author-name">Nur Fadilah</div><div class="author-note">Mahasiswi, Makassar</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal" style="transition-delay:0.3s">
+        <div class="stars">★★★★☆</div>
+        <blockquote>"Sering bawa klien ke sini untuk meeting santai. Makanannya juga enak, bukan cuma minumannya. Recommended banget buat yang cari tempat cozy!"</blockquote>
+        <div class="testi-author">
+          <div class="avatar">MH</div>
+          <div><div class="author-name">Muh. Haikal</div><div class="author-note">Pengusaha, Gowa</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MAP ── -->
+<section class="map-section" id="lokasi">
+  <div class="container">
+    <span class="section-label reveal">Temukan Kami</span>
+    <h2 class="section-title reveal">5 Cabang Siap<br/>Melayani Kamu</h2>
+  </div>
+  <div class="map-layout" style="max-width:1100px;margin:3rem auto 0">
+    <aside class="map-sidebar">
+      <div class="map-sidebar-title">Pilih Cabang</div>
+      <div id="branchList"></div>
+    </aside>
+    <div id="map"></div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">Warkop BangYus</div>
+      <div style="font-size:0.75rem;margin-top:6px">Secangkir kehangatan untuk semua</div>
+    </div>
+    <div class="footer-links">
+      <a href="#tentang">Tentang</a>
+      <a href="#menu">Menu</a>
+      <a href="#suasana">Suasana</a>
+      <a href="#ulasan">Ulasan</a>
+      <a href="#lokasi">Cabang</a>
+    </div>
+    <div class="footer-socials">
+      <a class="social-btn" href="#" title="Instagram">IG</a>
+      <a class="social-btn" href="#" title="TikTok">TK</a>
+      <a class="social-btn" href="#" title="WhatsApp">WA</a>
+    </div>
+    <div class="footer-copy">© 2024 Warkop BangYus · Peta: © OpenStreetMap</div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── NAV SCROLL ──
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll',()=>{
+  navbar.classList.toggle('scrolled',window.scrollY>60);
+});
+
+// ── REVEAL ON SCROLL ──
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}
+  });
+},{threshold:0.12});
+revealEls.forEach(el=>observer.observe(el));
+
+// ── MENU DATA ──
+const menuData = {
+  kopi:[
+    {icon:'☕',name:'Kopi Hitam Toraja',desc:'Biji arabika pilihan dari pegunungan Toraja, diseduh manual pour-over.',price:'Rp 15.000'},
+    {icon:'🧋',name:'Es Susu Kopi',desc:'Espresso double shot, susu segar, gula aren. Signature kami.',price:'Rp 22.000'},
+    {icon:'🍵',name:'Kopi Susu Aren',desc:'Racikan espresso dengan gula aren asli Sulawesi.',price:'Rp 20.000'},
+    {icon:'🫖',name:'Cold Brew Enrekang',desc:'Diseduh dingin 18 jam, smooth dan tanpa rasa pahit.',price:'Rp 25.000'},
+  ],
+  'non-kopi':[
+    {icon:'🍵',name:'Teh Tarik',desc:'Teh hitam premium dikocok hingga berbusa, creamy dan wangi.',price:'Rp 14.000'},
+    {icon:'🥤',name:'Es Coklat',desc:'Dark chocolate 70%, susu full cream, dan es batu serut.',price:'Rp 18.000'},
+    {icon:'🍋',name:'Lemon Tea',desc:'Teh hitam segar dipadu jeruk lemon asli.',price:'Rp 15.000'},
+    {icon:'🥛',name:'Susu Jahe',desc:'Susu hangat dengan jahe merah, cocok untuk malam hari.',price:'Rp 16.000'},
+  ],
+  makanan:[
+    {icon:'🍞',name:'Roti Bakar BangYus',desc:'Roti tebal, mentega, susu kental manis — klasik yang tidak pernah bosan.',price:'Rp 18.000'},
+    {icon:'🥚',name:'Telur Mata Sapi',desc:'Dimasak di atas batu bara, disajikan dengan nasi atau roti.',price:'Rp 12.000'},
+    {icon:'🍜',name:'Mie Goreng Spesial',desc:'Mie kuning, bakso, sawi, dan taburan bawang goreng.',price:'Rp 20.000'},
+    {icon:'🫔',name:'Pisang Bakar Coklat',desc:'Pisang kepok pilihan, coklat leleh, keju parut.',price:'Rp 16.000'},
+  ],
+};
+
+let currentCat='kopi';
+function filterMenu(cat,btn){
+  currentCat=cat;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderMenu();
+}
+function renderMenu(){
+  const grid=document.getElementById('menuGrid');
+  grid.innerHTML=menuData[currentCat].map(item=>`
+    <div class="menu-card">
+      <span class="menu-card-icon">${item.icon}</span>
+      <h3>${item.name}</h3>
+      <p>${item.desc}</p>
+      <div class="price">${item.price}</div>
+    </div>`).join('');
+}
+renderMenu();
+
+// ── MAP ──
+const branches=[
+  {id:1,name:'Cabang Losari (Pusat)',addr:'Jl. Penghibur No. 12, Losari',hours:'07.00–22.00',tags:['Drive Thru','Wi-Fi'],lat:-5.1329,lng:119.4063},
+  {id:2,name:'Cabang Panakkukang',addr:'Jl. Boulevard No. 45, Panakkukang',hours:'08.00–22.00',tags:['Wi-Fi','Parkir'],lat:-5.1472,lng:119.4327},
+  {id:3,name:'Cabang Gowa',addr:'Jl. Poros Malino Km. 3, Sungguminasa',hours:'07.30–21.00',tags:['Smoking Area'],lat:-5.1980,lng:119.4533},
+  {id:4,name:'Cabang Hertasning',addr:'Ruko Hertasning Baru No. 8',hours:'09.00–23.00',tags:['Wi-Fi','Live Music'],lat:-5.1683,lng:119.4605},
+  {id:5,name:'Cabang Tanjung Bunga',addr:'Trans Studio Mall Lt. G',hours:'10.00–22.00',tags:['Mall','Wi-Fi'],lat:-5.1580,lng:119.3871},
+];
+
+const cLat=branches.reduce((s,b)=>s+b.lat,0)/branches.length;
+const cLng=branches.reduce((s,b)=>s+b.lng,0)/branches.length;
+const map=L.map('map').setView([cLat,cLng],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom:19
+}).addTo(map);
+
+const mkIcon=(size,color)=>L.divIcon({
+  className:'',
+  html:`<div style="width:${size}px;height:${size}px;background:${color};border:2px solid #E8C47A;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.4)"><span style="transform:rotate(45deg);font-size:${Math.round(size*0.45)}px">☕</span></div>`,
+  iconSize:[size,size],iconAnchor:[size/2,size],popupAnchor:[0,-size-4]
+});
+
+const markerNormal=mkIcon(32,'#2C1A0E');
+const markerActive=mkIcon(42,'#A0622A');
+const markers={};
+let activeId=null;
+
+const branchList=document.getElementById('branchList');
+branches.forEach(b=>{
+  const mk=L.marker([b.lat,b.lng],{icon:markerNormal}).addTo(map);
+  mk.bindPopup(`
+    <div style="font-family:'Epilogue',sans-serif;padding:0">
+      <div style="background:#1A1208;color:#E8C47A;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;padding:6px 12px">Warkop BangYus</div>
+      <div style="padding:10px 12px">
+        <strong style="font-size:0.85rem;color:#1A1208">${b.name}</strong>
+        <p style="font-size:0.75rem;color:#7A6040;margin-top:3px;line-height:1.5">${b.addr}</p>
+        <p style="font-size:0.72rem;color:#C8973A;margin-top:4px">⏰ ${b.hours}</p>
+      </div>
+    </div>`,{maxWidth:220});
+  mk.on('click',()=>setActive(b.id));
+  markers[b.id]=mk;
+
+  const card=document.createElement('div');
+  card.className='b-card';card.id=`bc-${b.id}`;
+  card.innerHTML=`
+    <h4>${b.name}</h4>
+    <div class="b-addr">${b.addr}</div>
+    <div class="b-hours">⏰ ${b.hours}</div>
+    <div>${b.tags.map(t=>`<span class="b-badge">${t}</span>`).join('')}</div>`;
+  card.onclick=()=>{setActive(b.id);map.setView([b.lat,b.lng],15,{animate:true});markers[b.id].openPopup()};
+  branchList.appendChild(card);
+});
+
+function setActive(id){
+  if(activeId){markers[activeId].setIcon(markerNormal);document.getElementById(`bc-${activeId}`)?.classList.remove('active')}
+  markers[id].setIcon(markerActive);
+  const card=document.getElementById(`bc-${id}`);
+  if(card){card.classList.add('active');card.scrollIntoView({behavior:'smooth',block:'nearest'})}
+  activeId=id;
+}
+</script>
+</body>
+</html>
